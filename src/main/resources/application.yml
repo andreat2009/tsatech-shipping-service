@@ -9,9 +9,9 @@ spring:
   application:
     name: shipping-service
   datasource:
-    url: ${SHIPPING_DB_URL:jdbc:postgresql://localhost:5432/shipping}
-    username: ${SHIPPING_DB_USER:shipping}
-    password: ${SHIPPING_DB_PASSWORD:shipping}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
