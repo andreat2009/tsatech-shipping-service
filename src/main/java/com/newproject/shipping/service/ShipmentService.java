@@ -51,6 +51,29 @@ public class ShipmentService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public ShipmentResponse upsertFromPaymentEvent(Long orderId, String paymentStatus) {
+        Shipment shipment = shipmentRepository.findFirstByOrderIdOrderByIdAsc(orderId)
+            .orElseGet(Shipment::new);
+
+        boolean created = shipment.getId() == null;
+        OffsetDateTime now = OffsetDateTime.now();
+
+        if (created) {
+            shipment.setOrderId(orderId);
+            shipment.setCarrier("AUTO-KAFKA");
+            shipment.setTrackingNumber("PENDING-" + orderId);
+            shipment.setCreatedAt(now);
+        }
+
+        shipment.setStatus(resolveShipmentStatus(paymentStatus));
+        shipment.setUpdatedAt(now);
+
+        Shipment saved = shipmentRepository.save(shipment);
+        eventPublisher.publish(created ? "SHIPMENT_CREATED" : "SHIPMENT_UPDATED", "shipment", saved.getId().toString(), toResponse(saved));
+        return toResponse(saved);
+    }
+
     @Transactional(readOnly = true)
     public ShipmentResponse get(Long id) {
         Shipment shipment = shipmentRepository.findById(id)
@@ -85,6 +108,22 @@ public class ShipmentService {
         if (request.getStatus() != null) {
             shipment.setStatus(request.getStatus());
         }
+    }
+
+    private String resolveShipmentStatus(String paymentStatus) {
+        if (paymentStatus == null) {
+            return "PENDING_PAYMENT";
+        }
+
+        if ("PAID".equalsIgnoreCase(paymentStatus) || "SETTLED".equalsIgnoreCase(paymentStatus)) {
+            return "READY_TO_SHIP";
+        }
+
+        if ("FAILED".equalsIgnoreCase(paymentStatus) || "DECLINED".equalsIgnoreCase(paymentStatus)) {
+            return "ON_HOLD";
+        }
+
+        return "PENDING_PAYMENT";
     }
 
     private ShipmentResponse toResponse(Shipment shipment) {

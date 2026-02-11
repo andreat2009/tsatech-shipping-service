@@ -31,6 +31,11 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: ${SHIPPING_CONSUMER_GROUP:shipping-service}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   security:
     oauth2:
       resourceserver:
@@ -41,6 +46,8 @@ shipping:
   events:
     enabled: ${SHIPPING_EVENTS_ENABLED:true}
     topic: ${SHIPPING_EVENTS_TOPIC:shipping.events}
+  payment-events:
+    topic: ${SHIPPING_PAYMENT_EVENTS_TOPIC:payment.events}
 
 management:
   endpoints:
